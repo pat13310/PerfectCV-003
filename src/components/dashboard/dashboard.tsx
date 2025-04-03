@@ -9,6 +9,12 @@ const CVsPage = lazy(() => import('./pages/cvs-page').then(module => ({ default:
 const LettersPage = lazy(() => import('./pages/letters-page').then(module => ({ default: module.LettersPage })));
 const ProfilePage = lazy(() => import('./pages/profile-page').then(module => ({ default: module.ProfilePage })));
 const SettingsPage = lazy(() => import('./pages/settings-page').then(module => ({ default: module.SettingsPage })));
+const SubscriptionPage = lazy(() =>
+  import("./pages/subscription-page").then((module) => ({
+    default: module.SubscriptionPage,
+  }))
+);
+
 
 export function Dashboard() {
   const [currentPage, setCurrentPage] = React.useState('dashboard');
@@ -41,6 +47,12 @@ export function Dashboard() {
         return (
           <Suspense fallback={<DashboardSkeleton type="profile" />}>
             <ProfilePage />
+          </Suspense>
+        );
+      case 'subscription':
+        return (
+          <Suspense fallback={<DashboardSkeleton type="subscription" />}>
+            <SubscriptionPage />
           </Suspense>
         );
       case 'settings':

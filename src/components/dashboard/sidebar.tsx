@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Users, FileText, Settings, Mail } from 'lucide-react';
+import { BarChart3, Users, FileText, Settings, Mail, CreditCard } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface SidebarProps {
@@ -13,6 +13,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
     { id: 'cvs', label: 'Mes CVs', icon: FileText },
     { id: 'letters', label: 'Mes lettres', icon: Mail },
     { id: 'profile', label: 'Profil', icon: Users },
+    { id: 'subscription', label: 'Abonnement', icon: CreditCard },
     { id: 'settings', label: 'Paramètres', icon: Settings },
   ];
 

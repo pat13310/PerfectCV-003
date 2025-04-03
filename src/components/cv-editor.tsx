@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import {
   DndContext,
@@ -17,8 +18,18 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, Trash2, GripVertical, Save, X } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  GripVertical,
+  Save,
+  X,
+  Sparkles,
+  Loader2,
+} from "lucide-react";
 import { cn } from "../lib/utils";
+import { AISettingsModal } from "../ai-settings-modal"; // Update the path to the correct location
+import { useAuthStore } from "../lib/store";
 
 interface FormData {
   title: string;
@@ -125,6 +136,10 @@ function SortableSkillItem({
 
 export function CVEditor({ initialData, onSave, onClose }: CVEditorProps) {
   const [newSkill, setNewSkill] = useState("");
+  const [showAISettings, setShowAISettings] = useState(false);
+  const aiConfig = useAuthStore((state) => state.aiConfig);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+
   const { register, handleSubmit, watch, setValue } = useForm<FormData>({
     defaultValues: {
       title: initialData?.title || "Nouveau CV",
@@ -274,6 +289,72 @@ export function CVEditor({ initialData, onSave, onClose }: CVEditorProps) {
     );
   };
 
+  async function enhanceContent(
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ): Promise<void> {
+    event.preventDefault();
+    const summary = watch("summary");
+
+    if (!summary.trim()) {
+      alert("Veuillez entrer un résumé avant de l'améliorer.");
+      return;
+    }
+
+    if (!aiConfig.apiKey) {
+      toast.error("Veuillez configurer votre clé API");
+      setShowAISettings(true);
+      return;
+    }
+
+    setIsEnhancing(true);
+
+    try {
+      const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${aiConfig.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "Tu es un expert en rédaction professionnelle française. Ta mission est d'améliorer le texte fourni pour le rendre plus professionnel, persuasif et impactant.",
+              },
+              {
+                role: "user",
+                content: `Améliore ce texte:\n\n${summary}`,
+              },
+            ],
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          `Erreur OpenAI: ${errorData.error?.message || "Erreur inconnue"}`
+        );
+      }
+
+      const data = await response.json();
+      setValue("summary", data.choices[0].message.content);
+      toast.success("Texte amélioré avec succès !");
+    } catch (error) {
+      console.error("Error enhancing content:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de l'amélioration du texte"
+      );
+    } finally {
+      setIsEnhancing(false);
+    }
+  }
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
       <div className="min-h-screen w-full py-8">
@@ -363,14 +444,34 @@ export function CVEditor({ initialData, onSave, onClose }: CVEditorProps) {
 
               {/* Professional Summary */}
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold mb-4">
-                  Résumé professionnel
-                </h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">Résumé</h2>
+                  <button
+                    onClick={enhanceContent}
+                    disabled={isEnhancing}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-3 rounded-xl text-white",
+                      "bg-gradient-to-r from-[#c026d3] to-[#9333ea]",
+                      "hover:from-[#a21caf] hover:to-[#7e22ce]",
+                      "transition-all duration-300 transform hover:scale-105",
+                      "shadow-lg shadow-[#9333ea]/25 hover:shadow-[#9333ea]/40",
+                      "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
+                      "relative overflow-hidden group"
+                    )}
+                  >
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+                    {isEnhancing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 animate-pulse" />
+                    )}
+                  </button>
+                </div>
                 <textarea
                   {...register("summary")}
-                  rows={4}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm fpx-1 outline-indigo-500"
-                  placeholder="Décrivez brièvement votre profil et vos objectifs professionnels"
+                  rows={3}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm px-1 outline-indigo-500"
+                  placeholder="Décrivez votre expérience et vos compétences"
                 />
               </div>
 
@@ -646,6 +747,10 @@ export function CVEditor({ initialData, onSave, onClose }: CVEditorProps) {
           </div>
         </div>
       </div>
+      <AISettingsModal
+        isOpen={showAISettings}
+        onClose={() => setShowAISettings(false)}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface DashboardSkeletonProps {
-  type: 'cvs' | 'letters' | 'profile' | 'settings';
+  type: 'cvs' | 'letters' | 'profile' |'subscription' | 'settings';
 }
 
 export function DashboardSkeleton({ type }: DashboardSkeletonProps) {

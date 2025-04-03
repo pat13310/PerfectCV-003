@@ -4,7 +4,6 @@ import { LetterEditor } from '../../letter-editor/letter-editor';
 import { getSupabaseClient } from '../../../lib/supabase';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../lib/store';
-import { cn } from '../../../lib/utils';
 
 interface Letter {
   id: string;
@@ -84,7 +83,7 @@ export function LettersPage() {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      setLetters(data || []);
+      setLetters(Array.isArray(data) ? (data as unknown as Letter[]) : []);
     } catch (error) {
       console.error('Error fetching letters:', error);
       toast.error('Erreur lors du chargement des lettres');
